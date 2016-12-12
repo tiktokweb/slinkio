@@ -51,20 +51,20 @@ GameServer.prototype = {
 	//The app has absolute control of the orbs and their placement
 	syncOrbs: function(){
 		var self = this;
-		//Detect when ball is out of bounds
+		//Detect when orb is out of bounds
 		this.orbs.forEach( function(orb){
 			self.detectCollision(orb);
 
-			// if(ball.x < 0 || ball.x > WIDTH
-			// 	|| ball.y < 0 || ball.y > HEIGHT){
-			// 	ball.out = true;
+			// if(orb.x < 0 || orb.x > WIDTH
+			// 	|| orb.y < 0 || orb.y > HEIGHT){
+			// 	orb.out = true;
 			// }else{
-			// 	ball.fly();
+			// 	orb.fly();
 			// }
 		});
 	},
 
-	//Detect if ball collides with any tank
+	//Detect if orb collides with any tank
 	detectCollision: function(orb){
 		var self = this;
 
@@ -125,7 +125,7 @@ io.on('connection', function(client) {
 		var initY = getRandomInt(40, 500);
 		client.emit('addSnake', { id: snake.id, type: snake.type, isLocal: true, x: initX, y: initY, hp: SNAKE_INIT_HP });
 		client.broadcast.emit('addSnake', { id: snake.id, type: snake.type, isLocal: false, x: initX, y: initY, hp: SNAKE_INIT_HP} );
-
+		console.log("Calling addSnake on game object");
 		game.addSnake({ id: snake.id, type: snake.type, hp: SNAKE_INIT_HP});
 	});
 
@@ -134,22 +134,22 @@ io.on('connection', function(client) {
 		if(data.snake != undefined){
 			game.syncSnake(data.snake);
 		}
-		//update ball positions
-		game.syncBalls();
+		//update orb positions
+		game.syncOrbs();
 		//Broadcast data to clients
 		client.emit('sync', game.getData());
 		client.broadcast.emit('sync', game.getData());
 
 		//I do the cleanup after sending data, so the clients know
-		//when the tank dies and when the balls explode
+		//when the tank dies and when the orbs explode
 		game.cleanDeadSnakes();
 		game.cleanDeadOrbs();
 		counter ++;
 	});
 
-	// client.on('shoot', function(ball){
-	// 	var ball = new Ball(ball.ownerId, ball.alpha, ball.x, ball.y );
-	// 	game.addBall(ball);
+	// client.on('shoot', function(orb){
+	// 	var orb = new Orb(orb.ownerId, orb.alpha, orb.x, orb.y );
+	// 	game.addOrb(orb);
 	// });
 
 	client.on('leaveGame', function(snakeId){

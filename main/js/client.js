@@ -6,6 +6,7 @@ var selectedSnake = 1;
 var snakeName = '';
 
 socket.on('addSnake', function(snake){
+	console.log("ADDING SNAKE");
 	game.addSnake(snake.id, snake.type, snake.isLocal, snake.x, snake.y);
 });
 

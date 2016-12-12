@@ -4,8 +4,8 @@ var ROTATION_SPEED = 5;
 var ARENA_MARGIN = 30;
 
 function Game(arenaId, w, h, socket){
-	this.tanks = []; //Tanks (other than the local tank)
-	this.balls = [];
+	this.snakes = []; //Snakes (other than the local snake)
+	this.orbs = [];
 	this.width = w;
 	this.height = h;
 	this.$arena = $(arenaId);
@@ -24,16 +24,18 @@ Game.prototype = {
 	addSnake: function(id, type, isLocal, x, y, hp){
 		var t = new Snake(id, type, this.$arena, this, isLocal, x, y, hp);
 		if(isLocal){
+			console.log("Adding Snake in snakes.js");
 			this.localSnake = t;
 		}else{
+			console.log("WTF ADD SNAKE GLOBAL");
 			this.snakes.push(t);
 		}
 	},
 
 	removeSnake: function(snakeId){
-		//Remove tank object
+		//Remove snake object
 		this.snakes = this.snakes.filter( function(t){return t.id != snakeId} );
-		//remove tank from dom
+		//remove snake from dom
 		$('#' + snakeId).remove();
 		$('#info-' + snakeId).remove();
 	},
@@ -57,13 +59,13 @@ Game.prototype = {
 	},
 
 	mainLoop: function(){
-		if(this.localTank != undefined){
-			this.sendData(); //send data to server about local tank
+		if(this.localSnake != undefined){
+			this.sendData(); //send data to server about local snake
 		}
 
-		if(this.localTank != undefined){
-			//move local tank
-			this.localTank.move();
+		if(this.localSnake != undefined){
+			//move local snake
+			this.localSnake.move();
 		}
 
 	},
@@ -72,15 +74,14 @@ Game.prototype = {
 		//Send local data to server
 		var gameData = {};
 
-		//Send tank data
+		//Send snake data
 		var t = {
-			id: this.localTank.id,
-			x: this.localTank.x,
-			y: this.localTank.y,
-			baseAngle: this.localTank.baseAngle,
-			cannonAngle: this.localTank.cannonAngle
+			id: this.localSnake.id,
+			x: this.localSnake.x,
+			y: this.localSnake.y,
+			baseAngle: this.localSnake.baseAngle,
 		};
-		gameData.tank = t;
+		gameData.snake = t;
 		//Client game does not send any info about balls,
 		//the server controls that part
 		this.socket.emit('sync', gameData);
@@ -89,46 +90,45 @@ Game.prototype = {
 	receiveData: function(serverData){
 		var game = this;
 
-		serverData.tanks.forEach( function(serverTank){
+		serverData.snakes.forEach( function(serverSnake){
 
-			//Update local tank stats
-			if(game.localTank !== undefined && serverTank.id == game.localTank.id){
-				game.localTank.hp = serverTank.hp;
-				if(game.localTank.hp <= 0){
-					game.killTank(game.localTank);
+			//Update local snake stats
+			if(game.localSnake !== undefined && serverSnake.id == game.localSnake.id){
+				game.localSnake.hp = serverSnake.hp;
+				if(game.localSnake.hp <= 0){
+					game.killSnake(game.localSnake);
 				}
 			}
 
-			//Update foreign tanks
+			//Update foreign snakes
 			var found = false;
-			game.tanks.forEach( function(clientTank){
-				//update foreign tanks
-				if(clientTank.id == serverTank.id){
-					clientTank.x = serverTank.x;
-					clientTank.y = serverTank.y;
-					clientTank.baseAngle = serverTank.baseAngle;
-					clientTank.cannonAngle = serverTank.cannonAngle;
-					clientTank.hp = serverTank.hp;
-					if(clientTank.hp <= 0){
-						game.killTank(clientTank);
+			game.snakes.forEach( function(clientSnake){
+				//update foreign snakes
+				if(clientSnake.id == serverSnake.id){
+					clientSnake.x = serverSnake.x;
+					clientSnake.y = serverSnake.y;
+					clientSnake.baseAngle = serverSnake.baseAngle;
+					clientSnake.hp = serverSnake.hp;
+					if(clientSnake.hp <= 0){
+						game.killSnake(clientSnake);
 					}
-					clientTank.refresh();
+					clientSnake.refresh();
 					found = true;
 				}
 			});
 			if(!found &&
-				(game.localTank == undefined || serverTank.id != game.localTank.id)){
+				(game.localSnake == undefined || serverSnake.id != game.localSnake.id)){
 				//I need to create it
-				game.addTank(serverTank.id, serverTank.type, false, serverTank.x, serverTank.y, serverTank.hp);
+				game.addSnake(serverSnake.id, serverSnake.type, false, serverSnake.x, serverSnake.y, serverSnake.hp);
 			}
 		});
 
 		//Render balls
 		game.$arena.find('.cannon-ball').remove();
 
-		serverData.balls.forEach( function(serverBall){
-			var b = new Ball(serverBall.id, serverBall.ownerId, game.$arena, serverBall.x, serverBall.y);
-			b.exploding = serverBall.exploding;
+		serverData.orbs.forEach( function(serverOrb){
+			var b = new Orb(serverOrb.id, serverOrb.ownerId, game.$arena, serverOrb.x, serverOrb.y);
+			b.exploding = serverOrb.exploding;
 			if(b.exploding){
 				b.explode();
 			}
@@ -136,9 +136,9 @@ Game.prototype = {
 	}
 }
 
-function Ball(id, ownerId, $arena, x, y){
+function Orb(id, size, $arena, x, y){
 	this.id = id;
-	this.ownerId = ownerId;
+	this.size = size;
 	this.$arena = $arena;
 	this.x = x;
 	this.y = y;
@@ -146,31 +146,18 @@ function Ball(id, ownerId, $arena, x, y){
 	this.materialize();
 }
 
-Ball.prototype = {
+Orb.prototype = {
 
 	materialize: function(){
 		this.$arena.append('<div id="' + this.id + '" class="cannon-ball" style="left:' + this.x + 'px"></div>');
 		this.$body = $('#' + this.id);
 		this.$body.css('left', this.x + 'px');
 		this.$body.css('top', this.y + 'px');
-	},
-
-	explode: function(){
-		this.$arena.append('<div id="expl' + this.id + '" class="ball-explosion" style="left:' + this.x + 'px"></div>');
-		var $expl = $('#expl' + this.id);
-		$expl.css('left', this.x + 'px');
-		$expl.css('top', this.y + 'px');
-		setTimeout( function(){
-			$expl.addClass('expand');
-		}, 1);
-		setTimeout( function(){
-			$expl.remove();
-		}, 1000);
 	}
 
 }
 
-function Tank(id, type, $arena, game, isLocal, x, y, hp){
+function Snake(id, type, $arena, game, isLocal, x, y, hp){
 	this.id = id;
 	this.type = type;
 	this.speed = 5;
@@ -180,7 +167,6 @@ function Tank(id, type, $arena, game, isLocal, x, y, hp){
 	this.baseAngle = getRandomInt(0, 360);
 	//Make multiple of rotation amount
 	this.baseAngle -= (this.baseAngle % ROTATION_SPEED);
-	this.cannonAngle = 0;
 	this.x = x;
 	this.y = y;
 	this.dir = [0, 0, 0, 0];
@@ -192,10 +178,10 @@ function Tank(id, type, $arena, game, isLocal, x, y, hp){
 	this.materialize();
 }
 
-Tank.prototype = {
+Snake.prototype = {
 
 	materialize: function(){
-		this.$arena.append('<div id="' + this.id + '" class="tank tank' + this.type + '"></div>');
+		this.$arena.append('<div id="' + this.id + '" class="snake snake' + this.type + '"></div>');
 		this.$body = $('#' + this.id);
 		this.$body.css('width', this.w);
 		this.$body.css('height', this.h);
@@ -205,7 +191,7 @@ Tank.prototype = {
 		this.$body.css('-o-transform', 'rotateZ(' + this.baseAngle + 'deg)');
 		this.$body.css('transform', 'rotateZ(' + this.baseAngle + 'deg)');
 
-		this.$body.append('<div id="cannon-' + this.id + '" class="tank-cannon"></div>');
+		this.$body.append('<div id="cannon-' + this.id + '" class="snake-cannon"></div>');
 		this.$cannon = $('#cannon-' + this.id);
 
 		this.$arena.append('<div id="info-' + this.id + '" class="info"></div>');
@@ -234,12 +220,6 @@ Tank.prototype = {
 		this.$body.css('-moz-transform', 'rotateZ(' + this.baseAngle + 'deg)');
 		this.$body.css('-o-transform', 'rotateZ(' + this.baseAngle + 'deg)');
 		this.$body.css('transform', 'rotateZ(' + this.baseAngle + 'deg)');
-
-		var cannonAbsAngle = this.cannonAngle - this.baseAngle;
-		this.$cannon.css('-webkit-transform', 'rotateZ(' + cannonAbsAngle + 'deg)');
-		this.$cannon.css('-moz-transform', 'rotateZ(' + cannonAbsAngle + 'deg)');
-		this.$cannon.css('-o-transform', 'rotateZ(' + cannonAbsAngle + 'deg)');
-		this.$cannon.css('transform', 'rotateZ(' + cannonAbsAngle + 'deg)');
 
 		this.$info.css('left', (this.x) + 'px');
 		this.$info.css('top', (this.y) + 'px');
@@ -294,9 +274,9 @@ Tank.prototype = {
 		}).mousemove( function(e){ //Detect mouse for aiming
 			var mx = event.pageX - t.$arena.offset().left;
 			var my = event.pageY - t.$arena.offset().top;
-			t.setCannonAngle(mx, my);
+			//t.setCannonAngle(mx, my);
 		}).click( function(){
-			t.shoot();
+			//t.shoot();
 		});
 
 	},
@@ -318,7 +298,7 @@ Tank.prototype = {
 		this.refresh();
 	},
 
-	/* Rotate base of tank to match movement direction */
+	/* Rotate base of snake to match movement direction */
 	rotateBase: function(){
 		if((this.dir[0] == 1 && this.dir[1] == 1)
 			|| (this.dir[0] == -1 && this.dir[1] == -1)){ //diagonal "left"
@@ -392,36 +372,6 @@ Tank.prototype = {
 		if(this.baseAngle < 0){
 			this.baseAngle = 0;
 		}
-	},
-
-	setCannonAngle: function(mx, my){
-		var tank = { x: this.x , y: this.y};
-		var mouse = { x: mx, y: my};
-		var deltaX = mouse.x - tank.x;
-		var deltaY = mouse.y - tank.y;
-		this.cannonAngle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
-		this.cannonAngle += 90;
-	},
-
-	shoot: function(){
-		if(this.dead){
-			return;
-		}
-
-		//Emit ball to server
-		var serverBall = {};
-		//Just for local balls who have owner
-		serverBall.alpha = this.cannonAngle * Math.PI / 180; //angle of shot in radians
-		//Set init position
-		var cannonLength = 60;
-		var deltaX = cannonLength * Math.sin(serverBall.alpha);
-		var deltaY = cannonLength * Math.cos(serverBall.alpha);
-
-		serverBall.ownerId = this.id;
-		serverBall.x = this.x + deltaX - 5;
-		serverBall.y = this.y - deltaY - 5;
-
-		this.game.socket.emit('shoot', serverBall);
 	}
 
 }
