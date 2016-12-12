@@ -1,0 +1,29 @@
+{
+  "name": "slinkio",
+  "version": "0.0.1",
+  "description": "Slither io remake",
+  "main": "app.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ritzbitz01/slinkio"
+  },
+  "keywords": [
+    "tanks",
+    "sockets",
+    "nodejs"
+  ],
+  "author": "Ryan Ritz",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ritzbitz01/slinkio/issues"
+  },
+  "homepage": "https://github.com/ritzbitz01/slinkio#readme",
+  "dependencies": {
+    "express": "^4.14.0",
+    "socket.io": "^1.7.2"
+  }
+}
