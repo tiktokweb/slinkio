@@ -158,6 +158,8 @@ Orb.prototype = {
 }
 
 function Snake(id, type, $arena, game, isLocal, x, y, hp){
+	// this.velocity
+	// this.direction
 	this.id = id;
 	this.type = type;
 	this.speed = 5;
@@ -169,7 +171,7 @@ function Snake(id, type, $arena, game, isLocal, x, y, hp){
 	this.baseAngle -= (this.baseAngle % ROTATION_SPEED);
 	this.x = x;
 	this.y = y;
-	this.dir = [0, 0, 0, 0];
+	this.dir = [1, 0, 0, 0];
 	this.game = game;
 	this.isLocal = isLocal;
 	this.hp = hp;
@@ -237,7 +239,9 @@ Snake.prototype = {
 		var t = this;
 
 		/* Detect both keypress and keyup to allow multiple keys
-		 and combined directions */
+		 and combined directions
+		 Need to calculate direction from the point user pressed to current x,y of snake head.
+		 */
 		$(document).keypress( function(e){
 			var k = e.keyCode || e.which;
 			switch(k){
@@ -259,24 +263,29 @@ Snake.prototype = {
 			var k = e.keyCode || e.which;
 			switch(k){
 				case 87: //W
-					t.dir[1] = 0;
+					//t.dir[1] = 0;
 					break;
 				case 68: //D
-					t.dir[0] = 0;
+					//t.dir[0] = 0;
 					break;
 				case 83: //S
-					t.dir[1] = 0;
+					//t.dir[1] = 0;
 					break;
 				case 65: //A
-					t.dir[0] = 0;
+					//t.dir[0] = 0;
 					break;
 			}
 		}).mousemove( function(e){ //Detect mouse for aiming
 			var mx = event.pageX - t.$arena.offset().left;
 			var my = event.pageY - t.$arena.offset().top;
 			//t.setCannonAngle(mx, my);
-		}).click( function(){
+		}).click( function(e){
 			//t.shoot();
+			console.log("Click X: " + event.pageX + " Y: " + event.pageY);
+			var xDelta = t.x - event.pageX;
+			var yDelta = t.y - event.pageY;
+			console.log("X DELTA: " + xDelta + " Y DELTA: " + yDelta);
+
 		});
 
 	},

@@ -20,11 +20,14 @@ function GameServer(){
 	this.snakes = [];
 	this.orbs = [];
 	this.lastOrbId = 0;
+	console.log("Creating GameServer");
+	// populate all the orbs here
 }
 
 GameServer.prototype = {
 
 	addSnake: function(snake){
+		console.log("adding snake in index.js");
 		this.snakes.push(snake);
 	},
 
